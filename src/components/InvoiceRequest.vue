@@ -19,12 +19,6 @@
           >
             <div class="order-header">
               <div class="order-number">{{ order.orderNumber }}</div>
-              <button
-                @click="removeOrder(order.id)"
-                class="remove-btn"
-              >
-                ×
-              </button>
             </div>
             <div class="order-info">
               <div class="customer">{{ order.customerName }}</div>
@@ -183,10 +177,6 @@ const goBack = () => {
   emit('back')
 }
 
-const removeOrder = (orderId: string) => {
-  orderStore.deselectedOrder(orderId)
-}
-
 const submitRequest = async () => {
   if (!canSubmit.value || isSubmitting.value) {
     return
@@ -307,9 +297,10 @@ const closeSuccessModal = () => {
 .order-card {
   border: 1px solid #eee;
   border-radius: 8px;
-  padding: 12px;
+  padding: 12px 5px 12px 12px; /* 增加右侧padding为X按钮留出空间 */
   margin-bottom: 8px;
   background: #f9f9f9;
+  position: relative; /* 添加相对定位 */
 }
 
 .order-header {
@@ -317,6 +308,7 @@ const closeSuccessModal = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  padding-right: 8px; /* 避免与X按钮重叠 */
 }
 
 .order-number {
@@ -325,25 +317,11 @@ const closeSuccessModal = () => {
   font-size: 14px;
 }
 
-.remove-btn {
-  background: #ff4757;
-  color: white;
-  border: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-}
-
 .order-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-right: 8px; /* 避免与X按钮重叠 */
 }
 
 .customer {

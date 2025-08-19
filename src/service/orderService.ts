@@ -5,7 +5,7 @@ import { type Order } from '../type/types'
 // const createInvoiceUrl = 'http://localhost:8080/examples/createInvoice.jsp' // 开票申请API地址
 const orderListUrl = 'http://183.6.70.7:16389/yxapi/list'  // 订单列表API地址
 const orderDetailUrl = 'http://183.6.70.7:16389/yxapi/detail' // 订单详情API地址
-const createInvoiceUrl = 'http://localhost:8080/examples/createInvoice.jsp' // 开票申请API地址
+const createInvoiceUrl = 'http://183.6.70.7:16389/yxapi/commit' // 开票申请API地址
 
 export const queryOrderList = async (keyword: string): Promise<Order[]> => {
     const params = new URLSearchParams()

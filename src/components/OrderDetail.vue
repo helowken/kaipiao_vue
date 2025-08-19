@@ -99,7 +99,7 @@ import { ref, computed, onMounted } from 'vue'
 import { type Order } from '../type/types'
 import { queryOrderDetail } from '../service/orderService'
 import { useOrderStore } from '../config/orderStore'
-import { da } from 'element-plus/es/locales.mjs'
+// import { da } from 'element-plus/es/locales.mjs'
 
 const orderStore = useOrderStore()
 

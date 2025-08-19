@@ -7,7 +7,7 @@
           <input
             v-model="searchKeyword"
             type="text"
-            placeholder="搜索订单号、客户名称..."
+            placeholder="订单号、客户名称、业务员..."
             @keyup.enter="handleSearch"
           />
           <i class="search-icon">🔍</i>

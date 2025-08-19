@@ -196,10 +196,10 @@ const submitRequest = async () => {
 
     let result
     result = await createInvoice(requestData)
-    if (result.success) {
+    if (result?.STATE == 1) {
       showSuccessModal.value = true
     } else {
-      alert('提交失败: ' + result.message)
+      alert('提交失败，请稍后重试')
     }
   } catch (error) {
     console.error('提交开票申请失败:', error)

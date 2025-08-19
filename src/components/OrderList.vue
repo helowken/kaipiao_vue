@@ -2,14 +2,17 @@
   <div class="order-list">
     <!-- 搜索栏 -->
     <div class="search-bar">
-      <div class="search-input">
-        <input
-          v-model="searchKeyword"
-          type="text"
-          placeholder="搜索订单号、客户名称..."
-          @input="handleSearch"
-        />
-        <i class="search-icon">🔍</i>
+      <div class="search-input-group">
+        <div class="search-input">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索订单号、客户名称..."
+            @keyup.enter="handleSearch"
+          />
+          <i class="search-icon">🔍</i>
+        </div>
+        <button @click="handleSearch" class="search-btn">搜索</button>
       </div>
     </div>
 
@@ -19,11 +22,11 @@
     <!-- 订单列表 -->
     <div v-else class="order-items">
       <div
-        v-for="order in filteredOrders"
+        v-for="order in orders"
         :key="order.id"
         class="order-item"
-        :class="{ selected: selectedOrders.includes(order.id) }"
-        @click="toggleOrderSelection(order.id)"
+        :class="{ selected: orderStore.isOrderSelected(order.id) }"
+        @click="orderStore.toggleOrderSelection(order)"
       >
         <div class="order-header">
           <div class="order-number">{{ order.orderNumber }}</div>
@@ -38,29 +41,29 @@
         <div class="order-footer">
           <div class="order-date">{{ formatDate(order.date) }}</div>
           <button
-            @click.stop="viewOrderDetail(order.id)"
+            @click.stop="viewOrderDetail(order)"
             class="detail-btn"
           >
             详情
           </button>
         </div>
-        <div class="checkbox" :class="{ checked: selectedOrders.includes(order.id) }">
-          <span v-if="selectedOrders.includes(order.id)">✓</span>
+        <div class="checkbox" :class="{ checked: orderStore.isOrderSelected(order.id) }">
+          <span v-if="orderStore.isOrderSelected(order.id)">✓</span>
         </div>
       </div>
     </div>
 
     <!-- 空状态 -->
-    <div v-if="!loading && filteredOrders.length === 0" class="empty-state">
+    <div v-if="!loading && orders.length === 0" class="empty-state">
       <div class="empty-icon">📋</div>
       <div class="empty-text">暂无订单数据</div>
     </div>
 
     <!-- 底部操作栏 -->
-    <div v-if="selectedOrders.length > 0" class="bottom-actions">
+    <div v-if="orderStore.selectedOrdersCount > 0" class="bottom-actions">
       <div class="selected-info">
-        已选择 {{ selectedOrders.length }} 个订单
-        <span class="total-amount">总金额: ¥{{ selectedTotalAmount.toFixed(2) }}</span>
+        已选择 {{ orderStore.selectedOrdersCount }} 个订单
+        <span class="total-amount">总金额: ¥{{ orderStore.selectedTotalAmount.toFixed(2) }}</span>
       </div>
       <button @click="proceedToInvoice" class="proceed-btn">
         申请开票
@@ -70,25 +73,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import type { Order } from '../types'
-import { orderService } from '../services/orderService'
+import { ref, onMounted } from 'vue'
+import { useOrderStore, type Order } from '../config/orderStore'
 
-// Props
-interface Props {
-  selectedOrders: string[]
-  needsRefresh?: boolean
-}
+const orderStore = useOrderStore()
 
 // Emits
 interface Emits {
-  (e: 'update:selectedOrders', value: string[]): void
-  (e: 'viewDetail', orderId: string): void
+  (e: 'viewDetail'): void
   (e: 'proceedToInvoice'): void
   (e: 'refreshComplete'): void
 }
 
-const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 // 响应式数据
@@ -96,74 +92,41 @@ const orders = ref<Order[]>([])
 const loading = ref(false)
 const searchKeyword = ref('')
 
-// 计算属性
-const filteredOrders = computed(() => {
-  let result = orders.value
-
-  // 关键词搜索
-  if (searchKeyword.value.trim()) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(order =>
-      order.orderNumber.toLowerCase().includes(keyword) ||
-      order.customerName.toLowerCase().includes(keyword) ||
-      order.description.toLowerCase().includes(keyword)
-    )
-  }
-
-  return result
-})
-
-const selectedTotalAmount = computed(() => {
-  return orders.value
-    .filter(order => props.selectedOrders.includes(order.id))
-    .reduce((total, order) => total + order.amount, 0)
-})
+// URL配置
+const orderListUrl = 'http://localhost:8080/examples/orderList.jsp'  // 订单列表API地址
 
 // 方法
-const loadOrders = async () => {
-  // 只有在需要刷新时才重新加载数据
-  if (!props.needsRefresh && orders.value.length > 0) {
-    return
-  }
-  
+const loadOrders = async (searchParams?: { keyword?: string }) => {
   try {
     loading.value = true
-    orders.value = await orderService.getOrders()
     
-    // 完成刷新后通知父组件
-    if (props.needsRefresh) {
-      emit('refreshComplete')
+    // 构建请求参数
+    const params = new URLSearchParams()
+    if (searchParams?.keyword) {
+      params.append('keyword', searchParams.keyword)
     }
+    
+    const url = `${orderListUrl}${params.toString() ? `?${params.toString()}` : ''}`
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    orders.value = await response.json()
   } catch (error) {
-    // 静默处理错误，不显示控制台信息
+    // 处理错误
+    console.error('加载订单数据失败:', error)
   } finally {
     loading.value = false
   }
 }
 
 const handleSearch = () => {
-  // 如果还没有数据，触发数据加载
-  if (orders.value.length === 0) {
-    loadOrders()
-  }
-  // 注意：搜索逻辑通过computed属性filteredOrders自动处理
+  loadOrders({ keyword: searchKeyword.value.trim() })
 }
 
-const toggleOrderSelection = (orderId: string) => {
-  const selectedOrders = [...props.selectedOrders]
-  const index = selectedOrders.indexOf(orderId)
-  
-  if (index > -1) {
-    selectedOrders.splice(index, 1)
-  } else {
-    selectedOrders.push(orderId)
-  }
-  
-  emit('update:selectedOrders', selectedOrders)
-}
-
-const viewOrderDetail = (orderId: string) => {
-  emit('viewDetail', orderId)
+const viewOrderDetail = async (order: Order) => {
+  orderStore.currentOrder = order;
+  emit('viewDetail');
 }
 
 const proceedToInvoice = () => {
@@ -190,13 +153,6 @@ onMounted(() => {
   loadOrders()
 })
 
-// 监听needsRefresh变化，当需要强制刷新时重新加载
-watch(() => props.needsRefresh, (newValue) => {
-  if (newValue === true) {
-    // 强制刷新时重新加载数据
-    loadOrders()
-  }
-})
 </script>
 
 <style scoped>
@@ -216,8 +172,14 @@ watch(() => props.needsRefresh, (newValue) => {
   z-index: 100;
 }
 
+.search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .search-input {
-  width: 100%;
+  flex: 1;
   position: relative;
 }
 
@@ -242,6 +204,27 @@ watch(() => props.needsRefresh, (newValue) => {
   color: #999;
 }
 
+.search-btn {
+  background: #007aff;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 60px;
+  transition: background-color 0.3s ease;
+}
+
+.search-btn:hover {
+  background: #0056b3;
+}
+
+.search-btn:active {
+  background: #004494;
+  transform: scale(0.98);
+}
+
 .loading {
   text-align: center;
   padding: 40px;
@@ -252,7 +235,7 @@ watch(() => props.needsRefresh, (newValue) => {
   flex: 1;
   overflow-y: auto;
   padding: 8px 16px;
-  padding-bottom: 100px;
+  padding-bottom: 20px;
 }
 
 .order-item {
@@ -400,6 +383,7 @@ watch(() => props.needsRefresh, (newValue) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  z-index: 200;
 }
 
 .selected-info {
@@ -433,9 +417,13 @@ watch(() => props.needsRefresh, (newValue) => {
 
 /* 响应式设计 */
 @media (max-width: 480px) {
-  .search-bar {
-    flex-direction: column;
-    gap: 8px;
+  .search-input-group {
+    gap: 6px;
+  }
+  
+  .search-btn {
+    padding: 10px 12px;
+    min-width: 50px;
   }
 }
 </style>

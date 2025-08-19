@@ -95,15 +95,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import type { Order } from '../types'
-import { orderService } from '../services/orderService'
+import { ref, computed, onMounted } from 'vue'
+import { useOrderStore, type Order } from '../config/orderStore'
 
-// Props
-interface Props {
-  orderId: string
-  selectedOrders: string[]
-}
+const orderDetailUrl = 'http://localhost:8080/examples/orderDetail.jsp' // 订单详情API地址
+const orderStore = useOrderStore()
 
 // Emits
 interface Emits {
@@ -111,7 +107,6 @@ interface Emits {
   (e: 'toggleSelection', orderId: string): void
 }
 
-const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 // 响应式数据
@@ -120,13 +115,15 @@ const loading = ref(true)
 
 // 计算属性
 const isSelected = computed(() => {
-  return props.selectedOrders.includes(props.orderId)
+  const currentOrder = orderStore.currentOrder;
+  return currentOrder ? orderStore.isOrderSelected(currentOrder.id) : false;
 })
 
 // 方法
 const loadOrderDetail = async () => {
+  const currentOrder = orderStore.currentOrder;
   // 检查orderId是否有效
-  if (!props.orderId || props.orderId.trim() === '') {
+  if (!currentOrder) {
     order.value = null
     loading.value = false
     return
@@ -134,7 +131,14 @@ const loadOrderDetail = async () => {
 
   try {
     loading.value = true
-    order.value = await orderService.getOrderById(props.orderId)
+    const params = new URLSearchParams()
+    params.append('id', currentOrder.id);
+    const url = `${orderDetailUrl}${params.toString() ? `?${params.toString()}` : ''}`
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    order.value = await response.json()
   } catch (error) {
     // 静默处理错误，不显示控制台信息
     order.value = null
@@ -148,7 +152,8 @@ const goBack = () => {
 }
 
 const toggleSelection = () => {
-  emit('toggleSelection', props.orderId)
+  if (orderStore.currentOrder)
+    orderStore.toggleOrderSelection(orderStore.currentOrder);
 }
 
 const getStatusClass = (status: string) => {
@@ -171,16 +176,7 @@ const formatDate = (dateString: string) => {
 
 // 生命周期
 onMounted(() => {
-  if (props.orderId && props.orderId.trim() !== '') {
-    loadOrderDetail()
-  }
-})
-
-// 监听orderId变化
-watch(() => props.orderId, (newOrderId) => {
-  if (newOrderId && newOrderId.trim() !== '') {
-    loadOrderDetail()
-  }
+  loadOrderDetail()
 })
 </script>
 

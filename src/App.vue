@@ -1,93 +1,50 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useOrderStore } from './config/orderStore'
 import OrderList from './components/OrderList.vue'
 import OrderDetail from './components/OrderDetail.vue'
 import InvoiceRequest from './components/InvoiceRequest.vue'
 
-// 页面状态管理
-type PageType = 'list' | 'detail' | 'invoice'
+// 使用Pinia store
+const orderStore = useOrderStore()
 
-const currentPage = ref<PageType>('list')
-const selectedOrders = ref<string[]>([])
-const currentOrderId = ref<string>('') // 确保初始值为空字符串
-const forceRefreshOrders = ref(true) // 初始需要加载数据
+// 页面状态
+const currentPage = ref<'list' | 'detail' | 'invoice'>('list')
 
 // 页面导航方法
-const showOrderDetail = (orderId: string) => {
-  currentOrderId.value = orderId
+const showOrderDetail = () => {
   currentPage.value = 'detail'
 }
 
 const showInvoiceRequest = () => {
+  if (orderStore.selectedOrdersCount === 0) {
+    alert('请先选择要开票的订单')
+    return
+  }
   currentPage.value = 'invoice'
 }
 
 const backToList = () => {
-  // 从详情页返回时不刷新数据，保持原有状态
-  currentPage.value = 'list'
-}
-
-const backToListFromInvoice = () => {
-  currentPage.value = 'list'
-}
-
-// 订单选择相关方法
-const updateSelectedOrders = (orders: string[]) => {
-  selectedOrders.value = orders
-}
-
-const toggleOrderSelection = (orderId: string) => {
-  const index = selectedOrders.value.indexOf(orderId)
-  if (index > -1) {
-    selectedOrders.value.splice(index, 1)
-  } else {
-    selectedOrders.value.push(orderId)
-  }
-}
-
-const removeOrderFromInvoice = (orderId: string) => {
-  const index = selectedOrders.value.indexOf(orderId)
-  if (index > -1) {
-    selectedOrders.value.splice(index, 1)
-  }
-}
-
-const handleInvoiceSuccess = () => {
-  selectedOrders.value = []
-  forceRefreshOrders.value = true // 开票成功后需要刷新订单状态
   currentPage.value = 'list'
 }
 </script>
 
 <template>
   <div class="app">
-    <!-- 订单列表页 -->
-    <OrderList
-      v-show="currentPage === 'list'"
-      :selectedOrders="selectedOrders"
-      :needsRefresh="forceRefreshOrders"
-      @update:selectedOrders="updateSelectedOrders"
-      @viewDetail="showOrderDetail"
-      @proceedToInvoice="showInvoiceRequest"
-      @refreshComplete="forceRefreshOrders = false"
+    <OrderList 
+      v-if="currentPage === 'list'"
+      @view-detail="showOrderDetail"
+      @proceed-to-invoice="showInvoiceRequest"
     />
-
-    <!-- 订单详情页 -->
+    
     <OrderDetail
-      v-show="currentPage === 'detail' && currentOrderId"
-      :orderId="currentOrderId"
-      :selectedOrders="selectedOrders"
+      v-if="currentPage === 'detail'"
       @back="backToList"
-      @toggleSelection="toggleOrderSelection"
     />
-
-    <!-- 开票申请页 -->
+    
     <InvoiceRequest
-      v-show="currentPage === 'invoice'"
-      :selectedOrderIds="selectedOrders"
-      @back="backToListFromInvoice"
-      @removeOrder="removeOrderFromInvoice"
-      @success="handleInvoiceSuccess"
+      v-if="currentPage === 'invoice'"
+      @back="backToList"
     />
   </div>
 </template>

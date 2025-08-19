@@ -10,10 +10,10 @@
     <div class="content">
       <!-- 选中订单列表 -->
       <div class="section">
-        <h3>选中订单 ({{ selectedOrdersData.length }})</h3>
+        <h3>选中订单 ({{ orderStore.selectedOrdersCount }})</h3>
         <div class="selected-orders">
           <div
-            v-for="order in selectedOrdersData"
+            v-for="order in orderStore.selectedOrders"
             :key="order.id"
             class="order-card"
           >
@@ -35,7 +35,7 @@
         
         <div class="total-section">
           <div class="total-amount">
-            总金额: ¥{{ totalAmount.toFixed(2) }}
+            总金额: ¥{{ orderStore.selectedTotalAmount.toFixed(2) }}
           </div>
         </div>
       </div>
@@ -140,27 +140,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import type { Order } from '../types'
-import { orderService } from '../services/orderService'
+import { ref, computed } from 'vue'
+import { useOrderStore } from '../config/orderStore'
 
-// Props
-interface Props {
-  selectedOrderIds: string[]
-}
-
-// Emits
+// 定义事件
 interface Emits {
   (e: 'back'): void
-  (e: 'removeOrder', orderId: string): void
-  (e: 'success'): void
 }
 
-const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+// 使用 Pinia store
+const orderStore = useOrderStore()
+
+// URL配置
+const createInvoiceUrl = 'http://localhost:8080/examples/createInvoice.jsp' // 开票申请API地址
+
 // 响应式数据
-const selectedOrdersData = ref<Order[]>([])
 const invoiceDescription = ref('')
 const invoiceType = ref('普通发票')
 const invoiceTitle = ref('')
@@ -170,12 +166,8 @@ const isSubmitting = ref(false)
 const showSuccessModal = ref(false)
 
 // 计算属性
-const totalAmount = computed(() => {
-  return selectedOrdersData.value.reduce((total, order) => total + order.amount, 0)
-})
-
 const canSubmit = computed(() => {
-  const basicRequirements = selectedOrdersData.value.length > 0 && 
+  const basicRequirements = orderStore.selectedOrdersCount > 0 && 
                            invoiceTitle.value.trim() && 
                            applicantName.value.trim()
   
@@ -187,24 +179,12 @@ const canSubmit = computed(() => {
 })
 
 // 方法
-const loadSelectedOrders = async () => {
-  try {
-    const allOrders = await orderService.getOrders()
-    selectedOrdersData.value = allOrders.filter(order => 
-      props.selectedOrderIds.includes(order.id)
-    )
-  } catch (error) {
-    // 静默处理错误，不显示控制台信息
-  }
-}
-
 const goBack = () => {
   emit('back')
 }
 
 const removeOrder = (orderId: string) => {
-  emit('removeOrder', orderId)
-  selectedOrdersData.value = selectedOrdersData.value.filter(order => order.id !== orderId)
+  orderStore.deselectedOrder(orderId)
 }
 
 const submitRequest = async () => {
@@ -216,8 +196,8 @@ const submitRequest = async () => {
     isSubmitting.value = true
     
     const requestData = {
-      orderIds: props.selectedOrderIds,
-      totalAmount: totalAmount.value,
+      orderIds: orderStore.getSelectedOrderIds(),
+      totalAmount: orderStore.selectedTotalAmount,
       description: invoiceDescription.value.trim(),
       invoiceType: invoiceType.value,
       invoiceTitle: invoiceTitle.value.trim(),
@@ -225,14 +205,28 @@ const submitRequest = async () => {
       applicantName: applicantName.value.trim()
     }
 
-    const result = await orderService.submitInvoiceRequest(requestData)
+    let result
+    const response = await fetch(createInvoiceUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData)
+    })
     
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    result = await response.json()
+
     if (result.success) {
       showSuccessModal.value = true
     } else {
       alert('提交失败: ' + result.message)
     }
   } catch (error) {
+    console.error('提交开票申请失败:', error)
     alert('提交失败，请稍后重试')
   } finally {
     isSubmitting.value = false
@@ -241,20 +235,10 @@ const submitRequest = async () => {
 
 const closeSuccessModal = () => {
   showSuccessModal.value = false
-  emit('success')
+  // 提交成功后清空选中的订单
+  orderStore.clearSelectedOrders()
+  emit('back')
 }
-
-// 生命周期
-onMounted(() => {
-  loadSelectedOrders()
-})
-
-// 监听selectedOrderIds变化，重新加载订单数据
-watch(() => props.selectedOrderIds, (newOrderIds) => {
-  if (newOrderIds && newOrderIds.length > 0) {
-    loadSelectedOrders()
-  }
-}, { immediate: true })
 </script>
 
 <style scoped>

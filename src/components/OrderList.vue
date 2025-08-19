@@ -143,8 +143,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useOrderStore, type Order } from '../config/orderStore'
+import { ref } from 'vue'
+import { type Order } from '../type/types'
+import { useOrderStore } from '../config/orderStore'
+import { queryOrderList } from '../service/orderService'
 
 const orderStore = useOrderStore()
 
@@ -152,7 +154,6 @@ const orderStore = useOrderStore()
 interface Emits {
   (e: 'viewDetail'): void
   (e: 'proceedToInvoice'): void
-  (e: 'refreshComplete'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -163,26 +164,13 @@ const loading = ref(false)
 const searchKeyword = ref('')
 const showSelectedList = ref(false)
 
-// URL配置
-const orderListUrl = 'http://localhost:8080/examples/orderList.jsp'  // 订单列表API地址
-
 // 方法
-const loadOrders = async (searchParams?: { keyword?: string }) => {
+const loadOrders = async (keyword: string) => {
   try {
+    orders.value = []
     loading.value = true
-    
-    // 构建请求参数
-    const params = new URLSearchParams()
-    if (searchParams?.keyword) {
-      params.append('keyword', searchParams.keyword)
-    }
-    
-    const url = `${orderListUrl}${params.toString() ? `?${params.toString()}` : ''}`
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    orders.value = await response.json()
+    const list: Order[] = await queryOrderList(keyword)
+    orders.value = list
   } catch (error) {
     // 处理错误
     console.error('加载订单数据失败:', error)
@@ -192,7 +180,7 @@ const loadOrders = async (searchParams?: { keyword?: string }) => {
 }
 
 const handleSearch = () => {
-  loadOrders({ keyword: searchKeyword.value.trim() })
+  loadOrders(searchKeyword.value.trim())
 }
 
 const viewOrderDetail = async (order: Order) => {
@@ -243,12 +231,6 @@ const proceedToInvoiceFromModal = () => {
   closeSelectedList()
   emit('proceedToInvoice')
 }
-
-// 生命周期和监听
-onMounted(() => {
-  // 首次挂载时加载数据
-  loadOrders()
-})
 
 </script>
 

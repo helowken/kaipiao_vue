@@ -46,7 +46,7 @@
       </div>
 
       <!-- 商品清单 -->
-      <div class="info-section">
+      <!-- <div class="info-section">
         <h3>商品清单</h3>
         <div class="items-list">
           <div
@@ -71,7 +71,7 @@
             <span class="total-amount">¥{{ order.amount.toFixed(2) }}</span>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- 操作按钮 -->
       <div class="actions">
@@ -96,9 +96,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useOrderStore, type Order } from '../config/orderStore'
+import { type Order } from '../type/types'
+import { queryOrderDetail } from '../service/orderService'
+import { useOrderStore } from '../config/orderStore'
+import { da } from 'element-plus/es/locales.mjs'
 
-const orderDetailUrl = 'http://localhost:8080/examples/orderDetail.jsp' // 订单详情API地址
 const orderStore = useOrderStore()
 
 // Emits
@@ -131,14 +133,7 @@ const loadOrderDetail = async () => {
 
   try {
     loading.value = true
-    const params = new URLSearchParams()
-    params.append('id', currentOrder.id);
-    const url = `${orderDetailUrl}${params.toString() ? `?${params.toString()}` : ''}`
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    order.value = await response.json()
+    order.value = await queryOrderDetail(currentOrder.id) 
   } catch (error) {
     // 静默处理错误，不显示控制台信息
     order.value = null
@@ -166,6 +161,7 @@ const getStatusClass = (status: string) => {
 }
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return ''
   const date = new Date(dateString)
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -252,35 +248,40 @@ onMounted(() => {
   overflow-y: auto;
   padding: 16px;
   padding-bottom: 100px;
+  width: 100%; /* 确保容器占满宽度 */
+  max-width: none; /* 移除最大宽度限制 */
 }
 
 .info-section {
   background: white;
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px; /* 增加内边距 */
   margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  width: 100%; /* 占满容器宽度 */
+  box-sizing: border-box; /* 确保padding不会超出容器 */
 }
 
 .info-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 16px;
+  margin: 0 0 20px 0; /* 增加底部间距 */
+  font-size: 18px; /* 增加标题字体 */
   font-weight: 600;
   color: #333;
   border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 自适应列数 */
+  gap: 20px 32px; /* 增加间距 */
+  width: 100%;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .info-item.full-width {
@@ -288,26 +289,26 @@ onMounted(() => {
 }
 
 .info-item label {
-  font-size: 12px;
+  font-size: 14px; /* 增加标签字体 */
   color: #666;
   font-weight: 500;
 }
 
 .info-item span {
-  font-size: 14px;
+  font-size: 16px; /* 增加值字体 */
   color: #333;
 }
 
 .amount {
   font-weight: 600;
   color: #007aff;
-  font-size: 16px !important;
+  font-size: 18px !important; /* 增加金额字体 */
 }
 
 .status {
-  padding: 4px 8px;
+  padding: 6px 12px; /* 增加状态标签内边距 */
   border-radius: 12px;
-  font-size: 12px !important;
+  font-size: 14px !important; /* 增加状态字体 */
   font-weight: 500;
   display: inline-block;
 }
@@ -424,9 +425,32 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .order-content {
+    padding: 12px;
+  }
+  
+  .info-section {
+    padding: 20px;
+  }
+  
   .info-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* 平板上调整最小宽度 */
+    gap: 16px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-content {
+    padding: 8px;
+  }
+  
+  .info-section {
+    padding: 16px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr; /* 手机上单列显示 */
     gap: 12px;
   }
   

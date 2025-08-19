@@ -136,6 +136,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useOrderStore } from '../config/orderStore'
+import { createInvoice } from '../service/orderService'
 
 // 定义事件
 interface Emits {
@@ -148,7 +149,6 @@ const emit = defineEmits<Emits>()
 const orderStore = useOrderStore()
 
 // URL配置
-const createInvoiceUrl = 'http://localhost:8080/examples/createInvoice.jsp' // 开票申请API地址
 
 // 响应式数据
 const invoiceDescription = ref('')
@@ -186,30 +186,16 @@ const submitRequest = async () => {
     isSubmitting.value = true
     
     const requestData = {
-      orderIds: orderStore.getSelectedOrderIds(),
-      totalAmount: orderStore.selectedTotalAmount,
-      description: invoiceDescription.value.trim(),
-      invoiceType: invoiceType.value,
-      invoiceTitle: invoiceTitle.value.trim(),
-      taxNumber: invoiceType.value === '专用发票' ? taxNumber.value.trim() : '',
-      applicantName: applicantName.value.trim()
+      '订单列表': orderStore.getSelectedOrderIds(),
+      '备注': invoiceDescription.value.trim(),
+      // '发票类型': invoiceType.value,
+      '发票抬头': invoiceTitle.value.trim(),
+      '税号': invoiceType.value === '专用发票' ? taxNumber.value.trim() : '',
+      '开票人': applicantName.value.trim()
     }
 
     let result
-    const response = await fetch(createInvoiceUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData)
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    result = await response.json()
-
+    result = await createInvoice(requestData)
     if (result.success) {
       showSuccessModal.value = true
     } else {

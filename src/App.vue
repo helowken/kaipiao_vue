@@ -32,7 +32,7 @@ const backToList = () => {
 <template>
   <div class="app">
     <OrderList 
-      v-if="currentPage === 'list'"
+      v-show="currentPage === 'list'"
       @view-detail="showOrderDetail"
       @proceed-to-invoice="showInvoiceRequest"
     />
@@ -66,6 +66,7 @@ body {
 }
 
 #app {
+  width: 100vh;
   height: 100vh;
   overflow: hidden;
 }

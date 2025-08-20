@@ -40,14 +40,14 @@
         </div>
         <div class="order-footer">
           <div class="order-date">{{ formatDate(order.date) }}</div>
-          <button
-            @click.stop="viewOrderDetail(order)"
-            class="detail-btn"
-          >
+          <button @click.stop="viewOrderDetail(order)" class="detail-btn">
             详情
           </button>
         </div>
-        <div class="checkbox" :class="{ checked: orderStore.isOrderSelected(order.id) }">
+        <div
+          class="checkbox"
+          :class="{ checked: orderStore.isOrderSelected(order.id) }"
+        >
           <span v-if="orderStore.isOrderSelected(order.id)">✓</span>
         </div>
       </div>
@@ -61,26 +61,28 @@
 
     <!-- 底部操作栏 - 固定显示 -->
     <div class="bottom-actions">
-      <button 
-        @click="toggleSelectedList" 
+      <button
+        @click="toggleSelectedList"
         class="cart-btn"
         :class="{ disabled: orderStore.selectedOrdersCount === 0 }"
         :disabled="orderStore.selectedOrdersCount === 0"
       >
         <span class="cart-icon">🛒</span>
-        <span v-if="orderStore.selectedOrdersCount > 0" class="cart-count">{{ orderStore.selectedOrdersCount }}</span>
+        <span v-if="orderStore.selectedOrdersCount > 0" class="cart-count">{{
+          orderStore.selectedOrdersCount
+        }}</span>
       </button>
       <div class="selected-info">
         <span v-if="orderStore.selectedOrdersCount > 0">
           已选择 {{ orderStore.selectedOrdersCount }} 个订单
-          <span class="total-amount">总金额: ¥{{ orderStore.selectedTotalAmount.toFixed(2) }}</span>
+          <span class="total-amount"
+            >总金额: ¥{{ orderStore.selectedTotalAmount.toFixed(2) }}</span
+          >
         </span>
-        <span v-else class="no-selection">
-          请选择需要开票的订单
-        </span>
+        <span v-else class="no-selection"> 请选择需要开票的订单 </span>
       </div>
-      <button 
-        @click="proceedToInvoice" 
+      <button
+        @click="proceedToInvoice"
         class="proceed-btn"
         :class="{ disabled: orderStore.selectedOrdersCount === 0 }"
         :disabled="orderStore.selectedOrdersCount === 0"
@@ -90,14 +92,21 @@
     </div>
 
     <!-- 选中订单列表弹窗 -->
-    <div v-if="showSelectedList" class="selected-list-overlay" @click="closeSelectedList">
+    <div
+      v-if="showSelectedList"
+      class="selected-list-overlay"
+      @click="closeSelectedList"
+    >
       <div class="selected-list-modal" @click.stop>
         <div class="modal-header">
           <h3>已选择的订单</h3>
           <button @click="closeSelectedList" class="close-btn">×</button>
         </div>
         <div class="modal-content">
-          <div v-if="orderStore.selectedOrders.length === 0" class="empty-selected">
+          <div
+            v-if="orderStore.selectedOrders.length === 0"
+            class="empty-selected"
+          >
             暂无选择的订单
           </div>
           <div v-else class="selected-orders">
@@ -112,14 +121,14 @@
               </div>
               <div class="order-sub-info">
                 <span class="customer-name">{{ order.customerName }}</span>
-                <span class="order-status" :class="getStatusClass(order.status)">
+                <span
+                  class="order-status"
+                  :class="getStatusClass(order.status)"
+                >
                   {{ order.status }}
                 </span>
               </div>
-              <button
-                @click="removeFromSelection(order.id)"
-                class="remove-btn"
-              >
+              <button @click="removeFromSelection(order.id)" class="remove-btn">
                 ×
               </button>
             </div>
@@ -127,14 +136,19 @@
         </div>
         <div class="modal-footer">
           <div class="total-summary">
-            总计: {{ orderStore.selectedOrdersCount }} 个订单，
-            金额: ¥{{ orderStore.selectedTotalAmount.toFixed(2) }}
+            总计: {{ orderStore.selectedOrdersCount }} 个订单， 金额: ¥{{
+              orderStore.selectedTotalAmount.toFixed(2)
+            }}
           </div>
           <div class="modal-actions">
             <button @click="clearAllSelections" class="clear-btn">清空</button>
-            <button @click="proceedToInvoiceFromModal" class="invoice-btn"
+            <button
+              @click="proceedToInvoiceFromModal"
+              class="invoice-btn"
               :disabled="orderStore.selectedOrdersCount === 0"
-            >申请开票</button>
+            >
+              申请开票
+            </button>
           </div>
         </div>
       </div>
@@ -143,95 +157,98 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { type Order } from '../type/types'
-import { useOrderStore } from '../config/orderStore'
-import { queryOrderList } from '../service/orderService'
+import { ref } from "vue";
+import { type Order } from "../type/types";
+import { useOrderStore } from "../config/orderStore";
+import { queryOrderList } from "../service/orderService";
 
-const orderStore = useOrderStore()
+const orderStore = useOrderStore();
 
 // Emits
 interface Emits {
-  (e: 'viewDetail'): void
-  (e: 'proceedToInvoice'): void
+  (e: "viewDetail"): void;
+  (e: "proceedToInvoice"): void;
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // 响应式数据
-const orders = ref<Order[]>([])
-const loading = ref(false)
-const searchKeyword = ref('')
-const showSelectedList = ref(false)
+const orders = ref<Order[]>([]);
+const loading = ref(false);
+const searchKeyword = ref("");
+const showSelectedList = ref(false);
 
 // 方法
 const loadOrders = async (keyword: string) => {
   try {
-    orders.value = []
-    loading.value = true
-    const list: Order[] = await queryOrderList(keyword)
-    orders.value = list
+    orders.value = [];
+    loading.value = true;
+    const list: Order[] = await queryOrderList(keyword);
+    orders.value = list;
   } catch (error) {
     // 处理错误
-    console.error('加载订单数据失败:', error)
+    console.error("加载订单数据失败:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleSearch = () => {
-  loadOrders(searchKeyword.value.trim())
-}
+  loadOrders(searchKeyword.value.trim());
+};
 
 const viewOrderDetail = async (order: Order) => {
   orderStore.currentOrder = order;
-  emit('viewDetail');
-}
+  emit("viewDetail");
+};
 
 const proceedToInvoice = () => {
-  emit('proceedToInvoice')
-}
+  emit("proceedToInvoice");
+};
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case '已完成': return 'status-completed'
-    case '已发货': return 'status-shipped'
-    case '待发货': return 'status-pending'
-    default: return ''
+    case "已完成":
+      return "status-completed";
+    case "已发货":
+      return "status-shipped";
+    case "待发货":
+      return "status-pending";
+    default:
+      return "";
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN')
-}
+  const date = new Date(dateString);
+  return date.toLocaleDateString("zh-CN");
+};
 
 // 选中订单列表相关方法
 const toggleSelectedList = () => {
-  showSelectedList.value = !showSelectedList.value
-}
+  showSelectedList.value = !showSelectedList.value;
+};
 
 const closeSelectedList = () => {
-  showSelectedList.value = false
-}
+  showSelectedList.value = false;
+};
 
 const removeFromSelection = (orderId: string) => {
-  orderStore.deselectedOrder(orderId)
+  orderStore.deselectedOrder(orderId);
   if (orderStore.selectedOrdersCount === 0) {
-    closeSelectedList()
+    closeSelectedList();
   }
-}
+};
 
 const clearAllSelections = () => {
-  orderStore.clearSelectedOrders()
-  closeSelectedList()
-}
+  orderStore.clearSelectedOrders();
+  closeSelectedList();
+};
 
 const proceedToInvoiceFromModal = () => {
-  closeSelectedList()
-  emit('proceedToInvoice')
-}
-
+  closeSelectedList();
+  emit("proceedToInvoice");
+};
 </script>
 
 <style scoped>
@@ -245,7 +262,7 @@ const proceedToInvoiceFromModal = () => {
 .search-bar {
   background: white;
   padding: 12px 16px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -313,7 +330,7 @@ const proceedToInvoiceFromModal = () => {
   border-radius: 12px;
   padding: 18px;
   margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
   cursor: pointer;
 }
@@ -441,7 +458,7 @@ const proceedToInvoiceFromModal = () => {
   right: 0;
   background: white;
   padding: 16px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -719,25 +736,25 @@ const proceedToInvoiceFromModal = () => {
   .search-input-group {
     gap: 6px;
   }
-  
+
   .search-btn {
     padding: 10px 12px;
     min-width: 50px;
   }
-  
+
   .bottom-actions {
     padding: 12px 16px;
   }
-  
+
   .cart-btn {
     width: 44px;
     height: 44px;
   }
-  
+
   .cart-icon {
     font-size: 18px;
   }
-  
+
   .selected-list-modal {
     max-height: 80vh;
   }

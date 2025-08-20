@@ -26,7 +26,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="total-section">
           <div class="total-amount">
             总金额: ¥{{ orderStore.selectedTotalAmount.toFixed(2) }}
@@ -117,12 +117,16 @@
         class="submit-btn"
         :disabled="!canSubmit || isSubmitting"
       >
-        {{ isSubmitting ? '提交中...' : '提交申请' }}
+        {{ isSubmitting ? "提交中..." : "提交申请" }}
       </button>
     </div>
 
     <!-- 成功提示弹窗 -->
-    <div v-if="showSuccessModal" class="modal-overlay" @click="closeSuccessModal">
+    <div
+      v-if="showSuccessModal"
+      class="modal-overlay"
+      @click="closeSuccessModal"
+    >
       <div class="modal-content" @click.stop>
         <div class="success-icon">✓</div>
         <h3>申请提交成功</h3>
@@ -134,87 +138,88 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useOrderStore } from '../config/orderStore'
-import { createInvoice } from '../service/orderService'
+import { ref, computed } from "vue";
+import { useOrderStore } from "../config/orderStore";
+import { createInvoice } from "../service/orderService";
 
 // 定义事件
 interface Emits {
-  (e: 'back'): void
+  (e: "back"): void;
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // 使用 Pinia store
-const orderStore = useOrderStore()
+const orderStore = useOrderStore();
 
 // URL配置
 
 // 响应式数据
-const invoiceDescription = ref('')
-const invoiceType = ref('普通发票')
-const invoiceTitle = ref('')
-const taxNumber = ref('')
-const applicantName = ref('')
-const isSubmitting = ref(false)
-const showSuccessModal = ref(false)
+const invoiceDescription = ref("");
+const invoiceType = ref("普通发票");
+const invoiceTitle = ref("");
+const taxNumber = ref("");
+const applicantName = ref("");
+const isSubmitting = ref(false);
+const showSuccessModal = ref(false);
 
 // 计算属性
 const canSubmit = computed(() => {
-  const basicRequirements = orderStore.selectedOrdersCount > 0 && 
-                           invoiceTitle.value.trim() && 
-                           applicantName.value.trim()
-  
-  if (invoiceType.value === '专用发票') {
-    return basicRequirements && taxNumber.value.trim()
+  const basicRequirements =
+    orderStore.selectedOrdersCount > 0 &&
+    invoiceTitle.value.trim() &&
+    applicantName.value.trim();
+
+  if (invoiceType.value === "专用发票") {
+    return basicRequirements && taxNumber.value.trim();
   }
-  
-  return basicRequirements
-})
+
+  return basicRequirements;
+});
 
 // 方法
 const goBack = () => {
-  emit('back')
-}
+  emit("back");
+};
 
 const submitRequest = async () => {
   if (!canSubmit.value || isSubmitting.value) {
-    return
+    return;
   }
 
   try {
-    isSubmitting.value = true
-    
-    const requestData = {
-      '订单列表': orderStore.getSelectedOrderIds(),
-      '备注': invoiceDescription.value.trim(),
-      // '发票类型': invoiceType.value,
-      '发票抬头': invoiceTitle.value.trim(),
-      '税号': invoiceType.value === '专用发票' ? taxNumber.value.trim() : '',
-      '开票人': applicantName.value.trim()
-    }
+    isSubmitting.value = true;
 
-    let result
-    result = await createInvoice(requestData)
+    const requestData = {
+      订单列表: orderStore.getSelectedOrderIds(),
+      备注: invoiceDescription.value.trim(),
+      发票类型: invoiceType.value.trim(),
+      发票抬头: invoiceTitle.value.trim(),
+      税号: invoiceType.value === "专用发票" ? taxNumber.value.trim() : "",
+      开票人: applicantName.value.trim(),
+    };
+
+    let result;
+    result = await createInvoice(requestData);
     if (result?.STATE == 1) {
-      showSuccessModal.value = true
+      showSuccessModal.value = true;
     } else {
-      alert('提交失败，请稍后重试')
+      alert("提交失败，请稍后重试");
     }
   } catch (error) {
-    console.error('提交开票申请失败:', error)
-    alert('提交失败，请稍后重试')
+    console.error("提交开票申请失败:", error);
+    alert("提交失败，请稍后重试");
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const closeSuccessModal = () => {
-  showSuccessModal.value = false
+  showSuccessModal.value = false;
   // 提交成功后清空选中的订单
-  orderStore.clearSelectedOrders()
-  emit('back')
-}
+  orderStore.clearSelectedOrders();
+  emit("back");
+};
 </script>
 
 <style scoped>
@@ -231,7 +236,7 @@ const closeSuccessModal = () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -266,7 +271,7 @@ const closeSuccessModal = () => {
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .section h3 {
@@ -351,7 +356,8 @@ const closeSuccessModal = () => {
   margin-bottom: 8px;
 }
 
-.form-input, .form-textarea {
+.form-input,
+.form-textarea {
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -360,7 +366,8 @@ const closeSuccessModal = () => {
   transition: border-color 0.3s ease;
 }
 
-.form-input:focus, .form-textarea:focus {
+.form-input:focus,
+.form-textarea:focus {
   border-color: #007aff;
 }
 
@@ -405,7 +412,7 @@ const closeSuccessModal = () => {
   right: 0;
   background: white;
   padding: 16px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .submit-btn {

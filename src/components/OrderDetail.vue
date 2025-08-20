@@ -80,7 +80,7 @@
           class="action-btn"
           :class="isSelected ? 'selected' : 'primary'"
         >
-          {{ isSelected ? '取消选择' : '选择此订单' }}
+          {{ isSelected ? "取消选择" : "选择此订单" }}
         </button>
       </div>
     </div>
@@ -95,85 +95,89 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { type Order } from '../type/types'
-import { queryOrderDetail } from '../service/orderService'
-import { useOrderStore } from '../config/orderStore'
+import { ref, computed, onMounted } from "vue";
+import { type Order } from "../type/types";
+import { queryOrderDetail } from "../service/orderService";
+import { useOrderStore } from "../config/orderStore";
 // import { da } from 'element-plus/es/locales.mjs'
 
-const orderStore = useOrderStore()
+const orderStore = useOrderStore();
 
 // Emits
 interface Emits {
-  (e: 'back'): void
-  (e: 'toggleSelection', orderId: string): void
+  (e: "back"): void;
+  (e: "toggleSelection", orderId: string): void;
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // 响应式数据
-const order = ref<Order | null>(null)
-const loading = ref(true)
+const order = ref<Order | null>(null);
+const loading = ref(true);
 
 // 计算属性
 const isSelected = computed(() => {
   const currentOrder = orderStore.currentOrder;
   return currentOrder ? orderStore.isOrderSelected(currentOrder.id) : false;
-})
+});
 
 // 方法
 const loadOrderDetail = async () => {
   const currentOrder = orderStore.currentOrder;
   // 检查orderId是否有效
   if (!currentOrder) {
-    order.value = null
-    loading.value = false
-    return
+    order.value = null;
+    loading.value = false;
+    return;
   }
 
   try {
-    loading.value = true
-    order.value = await queryOrderDetail(currentOrder.id) 
+    loading.value = true;
+    order.value = await queryOrderDetail(currentOrder.id);
   } catch (error) {
     // 静默处理错误，不显示控制台信息
-    order.value = null
+    order.value = null;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const goBack = () => {
-  emit('back')
-}
+  emit("back");
+};
 
 const toggleSelection = () => {
   if (orderStore.currentOrder)
     orderStore.toggleOrderSelection(orderStore.currentOrder);
-}
+};
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case '已完成': return 'status-completed'
-    case '已发货': return 'status-shipped'
-    case '待发货': return 'status-pending'
-    default: return ''
+    case "已完成":
+      return "status-completed";
+    case "已发货":
+      return "status-shipped";
+    case "待发货":
+      return "status-pending";
+    default:
+      return "";
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
 // 生命周期
 onMounted(() => {
-  loadOrderDetail()
-})
+  loadOrderDetail();
+});
 </script>
 
 <style scoped>
@@ -190,7 +194,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -213,7 +217,8 @@ onMounted(() => {
   color: #333;
 }
 
-.loading, .error-state {
+.loading,
+.error-state {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -257,7 +262,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 24px; /* 增加内边距 */
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   width: 100%; /* 占满容器宽度 */
   box-sizing: border-box; /* 确保padding不会超出容器 */
 }
@@ -395,7 +400,7 @@ onMounted(() => {
   right: 0;
   background: white;
   padding: 16px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn {
@@ -429,13 +434,16 @@ onMounted(() => {
   .order-content {
     padding: 12px;
   }
-  
+
   .info-section {
     padding: 20px;
   }
-  
+
   .info-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* 平板上调整最小宽度 */
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(250px, 1fr)
+    ); /* 平板上调整最小宽度 */
     gap: 16px 24px;
   }
 }
@@ -444,16 +452,16 @@ onMounted(() => {
   .order-content {
     padding: 8px;
   }
-  
+
   .info-section {
     padding: 16px;
   }
-  
+
   .info-grid {
     grid-template-columns: 1fr; /* 手机上单列显示 */
     gap: 12px;
   }
-  
+
   .info-item.full-width {
     grid-column: 1;
   }
